@@ -6,18 +6,41 @@ import HomePage from '../src/pages/homepage/homepage.component'
 import ShopPage from '../src/components/shop/shop.component'
 import SignInAndSignUp from '../src/pages/sign-in-and-sign-up/sign-in-and-sign-up'
 import Header from '../src/components/header/header.component'
-import { auth } from './firebase/firebase.utils'
+import { auth, createUserProfileDocument } from './firebase/firebase.utils'
 
 
 const App = () => {
   const [currentUser, setCurrentUser] = useState(null)
-
+  
   useEffect(() => {
-    auth.onAuthStateChanged(user => {
-      setCurrentUser(user)
-    })
-  }, [currentUser])
+    let unsubscribeFromAuth = null
+    const getUser = () => {
+      unsubscribeFromAuth = auth.onAuthStateChanged(async userAuth => {
+        if(userAuth){
+          const userRef = await createUserProfileDocument(userAuth)
 
+          userRef.onSnapshot(snapshot => {
+            setCurrentUser({
+              id: snapshot.id,
+              ...snapshot.data()
+            })
+          })
+        }
+        setCurrentUser(userAuth)
+      })
+    } 
+
+    getUser()
+
+    return function cleanup(){
+      unsubscribeFromAuth()
+    }
+  }, [])
+  
+  useEffect(() => {
+    console.log(currentUser)
+  },[currentUser])
+  
   return (
     <div>
       <Header currentUser={currentUser} />
